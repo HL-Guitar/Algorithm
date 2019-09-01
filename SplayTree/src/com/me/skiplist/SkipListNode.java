@@ -1,5 +1,7 @@
 package com.me.skiplist;
 
+import java.util.Objects;
+
 /**
  * @Description: 跳表节点
  * @Author: Light
@@ -10,6 +12,16 @@ public class SkipListNode<T extends Comparable<T>> {
     private T value;
     private SkipListNode next=null;
     private SkipListNode downNext=null;
+
+    public SkipListNode(T value) {
+        this.value = value;
+    }
+
+    public SkipListNode(T value, SkipListNode next, SkipListNode downNext) {
+        this.value = value;
+        this.next = next;
+        this.downNext = downNext;
+    }
 
     public T getValue() {
         return value;
@@ -35,4 +47,18 @@ public class SkipListNode<T extends Comparable<T>> {
         this.downNext = downNext;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SkipListNode<?> that = (SkipListNode<?>) o;
+        return Objects.equals(value, that.value) &&
+                Objects.equals(next, that.next) &&
+                Objects.equals(downNext, that.downNext);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value, next, downNext);
+    }
 }
