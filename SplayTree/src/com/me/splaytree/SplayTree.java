@@ -1,5 +1,7 @@
 package com.me.splaytree;
 
+import com.me.skiplist.SkipListNode;
+
 /**
  * @Description: 伸展树
  * @Author: Light
@@ -8,7 +10,6 @@ package com.me.splaytree;
  */
 public class SplayTree <T extends Comparable<T>>{
     private SplayTreeNode<T> mRoot; //根节点
-
     //子节点
     public class SplayTreeNode <T extends Comparable<T>>{
         T key;  //键值
@@ -18,6 +19,10 @@ public class SplayTree <T extends Comparable<T>>{
         public SplayTreeNode(){
             this.left=null;
             this.right=null;
+        }
+
+        public SplayTreeNode(T key) {
+            this.key = key;
         }
 
         public SplayTreeNode(T key, SplayTreeNode<T> left, SplayTreeNode<T> right) {
@@ -159,172 +164,92 @@ public class SplayTree <T extends Comparable<T>>{
     }
 
 
-    /*
-     * 旋转key对应的节点为根节点，并返回根节点。
-     *
-     * 注意：
-     *   (a)：伸展树中存在"键值为key的节点"。
-     *          将"键值为key的节点"旋转为根节点。
-     *   (b)：伸展树中不存在"键值为key的节点"，并且key < tree.key。
-     *      b-1 "键值为key的节点"的前驱节点存在的话，将"键值为key的节点"的前驱节点旋转为根节点。
-     *      b-2 "键值为key的节点"的前驱节点存在的话，则意味着，key比树中任何键值都小，那么此时，将最小节点旋转为根节点。
-     *   (c)：伸展树中不存在"键值为key的节点"，并且key > tree.key。
-     *      c-1 "键值为key的节点"的后继节点存在的话，将"键值为key的节点"的后继节点旋转为根节点。
-     *      c-2 "键值为key的节点"的后继节点不存在的话，则意味着，key比树中任何键值都大，那么此时，将最大节点旋转为根节点。
+    /**
+     * zag旋转
+     * @param p
      */
-    private SplayTreeNode<T> splay(SplayTreeNode<T> tree, T key) {
-        if (tree == null)
-            return tree;
+    public void lRot(SplayTreeNode<T> p){
+        //前置条件：p有右孩子，实现向左旋转
+        SplayTreeNode r = p.right;
+        p.right=r.left;
+        r.left=p;
+        p=r; //r成为根节点，左节点变为p,原r的左孩子成了p的右孩子
+    }
 
-        SplayTreeNode<T> N = new SplayTreeNode<T>();
-        SplayTreeNode<T> l = N;
-        SplayTreeNode<T> r = N;
-        SplayTreeNode<T> c;
+    /**
+     * zig旋转
+     * @param p
+     */
+    public void rRot(SplayTreeNode<T> p){
+        //前置条件：p有左孩子，实现向右旋转
+        SplayTreeNode r = p.left;
+        p.left = r.right;
+        r.right = p;
+        p = r; //r成为根节点，右节点变为p,原r的右孩子成了p的左孩子
+    }
 
-        for (;;) {
 
-            int cmp = key.compareTo(tree.key);
-            if (cmp < 0) {
-
-                if (tree.left == null)
-                    break;
-
-                if (key.compareTo(tree.left.key) < 0) {
-                    c = tree.left;                           /* rotate right */
-                    tree.left = c.right;
-                    c.right = tree;
-                    tree = c;
-                    if (tree.left == null)
-                        break;
-                }
-                r.left = tree;                               /* link right */
-                r = tree;
-                tree = tree.left;
-            } else if (cmp > 0) {
-
-                if (tree.right == null)
-                    break;
-
-                if (key.compareTo(tree.right.key) > 0) {
-                    c = tree.right;                          /* rotate left */
-                    tree.right = c.left;
-                    c.left = tree;
-                    tree = c;
-                    if (tree.right == null)
-                        break;
-                }
-
-                l.right = tree;                              /* link left */
-                l = tree;
-                tree = tree.right;
-            } else {
-                break;
+    public String insert(SplayTreeNode<T> p, T x) {
+        SplayTreeNode r;
+        String result = ResultCode.SUCCESS.getValue();;
+        if(p == null){  //插入新节点
+            p = new SplayTreeNode<T>();
+            return result;
+        }
+        if(x.equals(p.key)){
+            result = ResultCode.DUPLITED.getValue();
+            return result;
+        }
+        int compareVal = x.compareTo(p.key);
+        if(compareVal<0){
+            r = p.left;
+            if(r==null){  //left为空，找到插入点。先生成再zig旋转
+                r =  new SplayTreeNode<T>(x);
+                r.right = p;
+                p=r;
+                return result;
+            }else if(compareVal==0){ //存在这个值，直接zig旋转
+                rRot(p);
+                result = ResultCode.DUPLITED.getValue();
+                return result;
             }
-        }
-
-        l.right = tree.left;                                /* assemble */
-        r.left = tree.right;
-        tree.left = N.right;
-        tree.right = N.left;
-
-        return tree;
-    }
-
-    public void splay(T key) {
-        mRoot = splay(mRoot, key);
-    }
-
-
-    /*
-     * 将结点插入到伸展树中，并返回根节点
-     *
-     * 参数说明：
-     *     tree 伸展树的
-     *     z 插入的结点
-     */
-    private SplayTreeNode<T> insert(SplayTreeNode<T> tree, SplayTreeNode<T> z) {
-        int cmp;
-        SplayTreeNode<T> y = null;
-        SplayTreeNode<T> x = tree;
-
-        // 查找z的插入位置
-        while (x != null) {
-            y = x;
-            cmp = z.key.compareTo(x.key);
-            if (cmp < 0)
-                x = x.left;
-            else if (cmp > 0)
-                x = x.right;
-            else {
-                System.out.printf("不允许插入相同节点(%d)!\n", z.key);
-                z=null;
-                return tree;
+            int kCompareVal = x.compareTo((T) r.key);
+            if(kCompareVal<0){ //符合双重旋转的条件，zigzig旋转
+                result = insert(r.left, x); //递归寻找r.left的插入点
+                rRot(r);
+            }else{    //符合双重旋转的条件，zigzag旋转
+                result = insert(r.right, x);
+                lRot(r);
+                p.left = r;
             }
+            rRot(p); //插入的节点旋转为根节点
+        }else{
+            r=p.right;
+            int compareTVal = x.compareTo((T) r.key);
+            if(r==null){
+                r = new SplayTreeNode(x);
+                r.left=p;
+                p=r;
+                return result;
+            }else if(compareTVal==0){ //zag旋转
+                lRot(p);
+                result = ResultCode.DUPLITED.getValue();
+                return result;
+            }
+            if(compareTVal>0){  //zagzag旋转
+                result = insert(r.right, x);
+                lRot(p);
+            }else{ //zagzig旋转
+                result = insert(r.left, x);
+                rRot(r);
+                p.right=r;
+            }
+            lRot(p);
         }
-
-        if (y==null)
-            tree = z;
-        else {
-            cmp = z.key.compareTo(y.key);
-            if (cmp < 0)
-                y.left = z;
-            else
-                y.right = z;
-        }
-
-        return tree;
+        return result;
     }
 
-    public void insert(T key) {
-        SplayTreeNode<T> z=new SplayTreeNode<T>(key,null,null);
 
-        // 如果新建结点失败，则返回。
-        if ((z=new SplayTreeNode<T>(key,null,null)) == null)
-            return ;
-
-        // 插入节点
-        mRoot = insert(mRoot, z);
-        // 将节点(key)旋转为根节点
-        mRoot = splay(mRoot, key);
-    }
-
-    /*
-     * 删除结点(z)，并返回被删除的结点
-     *
-     * 参数说明：
-     *     bst 伸展树
-     *     z 删除的结点
-     */
-    private SplayTreeNode<T> remove(SplayTreeNode<T> tree, T key) {
-        SplayTreeNode<T> x;
-
-        if (tree == null)
-            return null;
-
-        // 查找键值为key的节点，找不到的话直接返回。
-        if (search(tree, key) == null)
-            return tree;
-
-        // 将key对应的节点旋转为根节点。
-        tree = splay(tree, key);
-
-        if (tree.left != null) {
-            // 将"tree的前驱节点"旋转为根节点
-            x = splay(tree.left, key);
-            // 移除tree节点
-            x.right = tree.right;
-        }
-        else
-            x = tree.right;
-
-        tree = null;
-
-        return x;
-    }
-
-    public void remove(T key) {
-        mRoot = remove(mRoot, key);
-    }
 
     /*
      * 销毁伸展树
